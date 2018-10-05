@@ -130,32 +130,6 @@ environment variable:
 
 		// add by Nigel end
 
-		// add by Nigel start: write a file
-		var serverFile *os.File
-		var err1 error
-		if commands.CheckFileIsExist(commands.ClientFilePath) {
-			err := os.Remove(commands.ClientFilePath)
-			if err != nil{
-				return
-			}
-			serverFile, err1 = os.OpenFile(commands.ClientFilePath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0666) //打开文件
-			if err1 != nil{
-				return
-			}
-		} else {
-			serverFile, err1 = os.Create(commands.ClientFilePath)
-			if err1 != nil{
-				return
-			}
-		}
-		clientFileContent := serverIp + ":" + serverPort
-		n, err1 := io.WriteString(serverFile, clientFileContent)
-		if err1 != nil{
-			return
-		}
-		_ = n
-		// add by Nigel end
-
 		if err := doInit(os.Stdout, cctx.ConfigRoot, empty, nBitsForKeypair, profiles, conf, serverIp, serverPort); err != nil {
 			res.SetError(err, cmdkit.ErrNormal)
 			return
@@ -218,6 +192,32 @@ func doInit(out io.Writer, repoRoot string, empty bool, nBitsForKeypair int, con
 			return err
 		}
 	}
+
+	// add by Nigel start: write a file
+	var serverFile *os.File
+	var err1 error
+	if commands.CheckFileIsExist(path.Join(repoRoot, commands.ClientFileName)) {
+		err := os.Remove(path.Join(repoRoot, commands.ClientFileName))
+		if err != nil{
+			return err
+		}
+		serverFile, err1 = os.OpenFile(path.Join(repoRoot, commands.ClientFileName), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0666) //打开文件
+		if err1 != nil{
+			return err1
+		}
+	} else {
+		serverFile, err1 = os.Create(path.Join(repoRoot, commands.ClientFileName))
+		if err1 != nil{
+			return err1
+		}
+	}
+	clientFileContent := serverIp + ":" + serverPort
+	n, err1 := io.WriteString(serverFile, clientFileContent)
+	if err1 != nil{
+		return err1
+	}
+	_ = n
+	// add by Nigel end
 
 	// add by Nigel start: add swarm.key file into .ipfs directory
 	if commands.CheckFileIsExist(path.Join(repoRoot, "swarm.key")) {
