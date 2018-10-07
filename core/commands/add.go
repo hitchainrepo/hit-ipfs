@@ -513,7 +513,6 @@ You can now check what blocks have been created by:
 							ip_port, err := ioutil.ReadFile(path.Join(repoPath, ClientFileName))
 
 							if err != nil {
-								fmt.Println("in line 510")
 								fmt.Println("Haven't completely added the files. Only stored in local repo!")
 								break LOOP
 							}
