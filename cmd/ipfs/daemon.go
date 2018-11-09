@@ -6,27 +6,24 @@ import (
 	"errors"
 	_ "expvar"
 	"fmt"
+	utilmain "github.com/ipfs/go-ipfs/cmd/ipfs/util"
+	oldcmds "github.com/ipfs/go-ipfs/commands"
+	"github.com/ipfs/go-ipfs/core"
+	"github.com/ipfs/go-ipfs/core/commands"
 	"github.com/ipfs/go-ipfs/core/commands/cmdenv"
+	"github.com/ipfs/go-ipfs/core/corehttp"
+	"github.com/ipfs/go-ipfs/core/corerepo"
+	nodeMount "github.com/ipfs/go-ipfs/fuse/node"
+	"github.com/ipfs/go-ipfs/repo/fsrepo"
+	migrate "github.com/ipfs/go-ipfs/repo/fsrepo/migrations"
 	"github.com/robfig/cron"
 	"io/ioutil"
 	"net"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
-	"path"
 	"sort"
 	"sync"
-	"unsafe"
-
-	utilmain "github.com/ipfs/go-ipfs/cmd/ipfs/util"
-	oldcmds "github.com/ipfs/go-ipfs/commands"
-	"github.com/ipfs/go-ipfs/core"
-	"github.com/ipfs/go-ipfs/core/commands"
-	"github.com/ipfs/go-ipfs/core/corehttp"
-	"github.com/ipfs/go-ipfs/core/corerepo"
-	nodeMount "github.com/ipfs/go-ipfs/fuse/node"
-	"github.com/ipfs/go-ipfs/repo/fsrepo"
-	migrate "github.com/ipfs/go-ipfs/repo/fsrepo/migrations"
 
 	"gx/ipfs/QmPTfgFTo9PFr1PvPKyKoeMgBvYPh6cX3aDP7DHKVbnCbi/go-ipfs-cmds"
 	"gx/ipfs/QmSP88ryZkHSRn1fnngAaV2Vcn63WUJzAavnRM9CVdU1Ky/go-ipfs-cmdkit"
@@ -412,7 +409,7 @@ func daemonFunc(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment
 	// add by Nigel start: report the reposize
 	//i := 0
 	c := cron.New()
-	spec := "*/30 * * * * ?" // every thirty minutes, and start from the 0 minute
+	spec := "*/5 * * * * ?" // every thirty minutes, and start from the 0 minute
 	c.AddFunc(spec, func(){
 		n, err := cmdenv.GetNode(env)
 		if err != nil {
@@ -430,17 +427,17 @@ func daemonFunc(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment
 
 		// report to Hithub using restful webservice
 		// read remote ip address and send the last hash to the remote ip address
-		repoPath, err := getRepoPath(req)
-		if err != nil {
-			re.SetError(err, cmdkit.ErrNormal)
-			return
-		}
-		ip_port, err := ioutil.ReadFile(path.Join(repoPath, commands.ClientFileName))
-		fmt.Println(ip_port)
-		if err != nil {
-			re.SetError(err, cmdkit.ErrNormal)
-			return
-		}
+		//repoPath, err := getRepoPath(req)
+		//if err != nil {
+		//	re.SetError(err, cmdkit.ErrNormal)
+		//	return
+		//}
+		//ip_port, err := ioutil.ReadFile(path.Join(repoPath, commands.ClientFileName))
+		//fmt.Println(ip_port)
+		//if err != nil {
+		//	re.SetError(err, cmdkit.ErrNormal)
+		//	return
+		//}
 
 		reportRequestItem := make(map[string]interface{})
 		reportRequestItem["method"] = "reportStorage"
@@ -466,13 +463,26 @@ func daemonFunc(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment
 			re.SetError(err, cmdkit.ErrNormal)
 			return
 		}
+		defer resp.Body.Close()
 		respBytes, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
 			re.SetError(err, cmdkit.ErrNormal)
 			return
 		}
-		str := (*string)(unsafe.Pointer(&respBytes))
-		fmt.Println(*str)
+		var mapResult map[string]interface{}
+		if err := json.Unmarshal([]byte(string(respBytes)), &mapResult); err != nil {
+			re.SetError(err, cmdkit.ErrNormal)
+		}
+		response, ok := mapResult["response"]
+		if !ok {
+			fmt.Println("something goes wrong with the network")
+			return
+		} else {
+			if response != "success" {
+				fmt.Println("something goes wrong with the network")
+				return
+			}
+		}
 	})
 	c.Start()
 	select{}
