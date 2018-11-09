@@ -1,27 +1,34 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	_ "expvar"
 	"fmt"
+	"github.com/ipfs/go-ipfs/core/commands/cmdenv"
+	"github.com/robfig/cron"
+	"io/ioutil"
 	"net"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
+	"path"
 	"sort"
 	"sync"
+	"unsafe"
 
 	utilmain "github.com/ipfs/go-ipfs/cmd/ipfs/util"
 	oldcmds "github.com/ipfs/go-ipfs/commands"
 	"github.com/ipfs/go-ipfs/core"
-	commands "github.com/ipfs/go-ipfs/core/commands"
-	corehttp "github.com/ipfs/go-ipfs/core/corehttp"
-	corerepo "github.com/ipfs/go-ipfs/core/corerepo"
+	"github.com/ipfs/go-ipfs/core/commands"
+	"github.com/ipfs/go-ipfs/core/corehttp"
+	"github.com/ipfs/go-ipfs/core/corerepo"
 	nodeMount "github.com/ipfs/go-ipfs/fuse/node"
-	fsrepo "github.com/ipfs/go-ipfs/repo/fsrepo"
+	"github.com/ipfs/go-ipfs/repo/fsrepo"
 	migrate "github.com/ipfs/go-ipfs/repo/fsrepo/migrations"
 
-	cmds "gx/ipfs/QmPTfgFTo9PFr1PvPKyKoeMgBvYPh6cX3aDP7DHKVbnCbi/go-ipfs-cmds"
+	"gx/ipfs/QmPTfgFTo9PFr1PvPKyKoeMgBvYPh6cX3aDP7DHKVbnCbi/go-ipfs-cmds"
 	"gx/ipfs/QmSP88ryZkHSRn1fnngAaV2Vcn63WUJzAavnRM9CVdU1Ky/go-ipfs-cmdkit"
 	mprome "gx/ipfs/QmUHHsirrDtP6WEHhE8SZeG672CLqDJn6XGzAHnvBHUiA3/go-metrics-prometheus"
 	"gx/ipfs/QmV6FjemM1K8oXjrvuq3wuVWWoU2TLDPmNnKrxHzY3v6Ai/go-multiaddr-net"
@@ -401,6 +408,77 @@ func daemonFunc(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment
 	prometheus.MustRegister(&corehttp.IpfsNodeCollector{Node: node})
 
 	fmt.Printf("Daemon is ready\n")
+
+	// add by Nigel start: report the reposize
+	//i := 0
+	c := cron.New()
+	spec := "*/30 * * * * ?" // every thirty minutes, and start from the 0 minute
+	c.AddFunc(spec, func(){
+		n, err := cmdenv.GetNode(env)
+		if err != nil {
+			re.SetError(err, cmdkit.ErrNormal)
+			return
+		}
+		sizeStat, err := corerepo.RepoSize(req.Context, n)
+		if err != nil {
+			re.SetError(err, cmdkit.ErrNormal)
+			return
+		}
+
+		// get node id
+		nodeId := n.Identity.Pretty()
+
+		// report to Hithub using restful webservice
+		// read remote ip address and send the last hash to the remote ip address
+		repoPath, err := getRepoPath(req)
+		if err != nil {
+			re.SetError(err, cmdkit.ErrNormal)
+			return
+		}
+		ip_port, err := ioutil.ReadFile(path.Join(repoPath, commands.ClientFileName))
+		fmt.Println(ip_port)
+		if err != nil {
+			re.SetError(err, cmdkit.ErrNormal)
+			return
+		}
+
+		reportRequestItem := make(map[string]interface{})
+		reportRequestItem["method"] = "reportStorage"
+		reportRequestItem["RepoSize"] = sizeStat.RepoSize
+		reportRequestItem["StorageMax"] = sizeStat.StorageMax
+		reportRequestItem["nodeId"] = nodeId
+		bytesData, err := json.Marshal(reportRequestItem)
+		if err != nil {
+			re.SetError(err, cmdkit.ErrNormal)
+			return
+		}
+		reader := bytes.NewReader(bytesData)
+		url := "http://localhost:8000/webservice/"
+		request, err := http.NewRequest("POST", url, reader)
+		if err != nil {
+			re.SetError(err, cmdkit.ErrNormal)
+			return
+		}
+		request.Header.Set("Content-Type", "application/json;charset=UTF-8")
+		client := http.Client{}
+		resp, err := client.Do(request)
+		if err != nil {
+			re.SetError(err, cmdkit.ErrNormal)
+			return
+		}
+		respBytes, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			re.SetError(err, cmdkit.ErrNormal)
+			return
+		}
+		str := (*string)(unsafe.Pointer(&respBytes))
+		fmt.Println(*str)
+	})
+	c.Start()
+	select{}
+	// add by Nigel end
+
+
 	// collect long-running errors and block for shutdown
 	// TODO(cryptix): our fuse currently doesnt follow this pattern for graceful shutdown
 	for err := range merge(apiErrc, gwErrc, gcErrc) {
