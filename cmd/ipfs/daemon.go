@@ -409,7 +409,7 @@ func daemonFunc(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment
 	// add by Nigel start: report the reposize
 	//i := 0
 	c := cron.New()
-	spec := "*/5 * * * * ?" // every thirty minutes, and start from the 0 minute
+	spec := "0 */30 * * * ?" // every thirty minutes, and start from the 0 minute
 	c.AddFunc(spec, func(){
 		n, err := cmdenv.GetNode(env)
 		if err != nil {
@@ -450,7 +450,7 @@ func daemonFunc(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment
 			return
 		}
 		reader := bytes.NewReader(bytesData)
-		url := "http://localhost:8000/webservice/"
+		url := "http://47.105.76.115:8000/webservice/"
 		request, err := http.NewRequest("POST", url, reader)
 		if err != nil {
 			re.SetError(err, cmdkit.ErrNormal)
