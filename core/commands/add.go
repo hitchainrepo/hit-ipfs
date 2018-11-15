@@ -102,26 +102,12 @@ func SendThingsToServerAfterAdd(ip_port string, content string) bool {
 }
 // add by Nigel end
 
-
-// add by Nigel start: read File
-func ReadFile(filename string) (string){
-	f, err := ioutil.ReadFile(filename)
-	if err != nil {
-		//fmt.Println("read fail", err)
-		return "error"
-	}
-	return string(f)
-}
-// add by Nigel end
-
-
 // add by Nigel start: get repo path
 func getRepoPath(req *cmds.Request) (string, error) {
 	repoOpt, found := req.Options["config"].(string)
 	if found && repoOpt != "" {
 		return repoOpt, nil
 	}
-
 	repoPath, err := fsrepo.BestKnownPath()
 	if err != nil {
 		return "", err
@@ -129,6 +115,18 @@ func getRepoPath(req *cmds.Request) (string, error) {
 	return repoPath, nil
 }
 // add by Nigel end
+
+
+// add by Nigel start: read File
+func ReadFile(filename string) (string){
+	f, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return "error"
+	}
+	return string(f)
+}
+// add by Nigel end
+
 
 const adderOutChanSize = 8
 
