@@ -79,7 +79,7 @@ func CheckFileIsExist(filename string) bool {
 func SendThingsToServerAfterAdd(ip_port string, content string) bool {
 	conn, err := net.Dial("tcp", ip_port)
 	if err != nil {
-		fmt.Println("连接服务端失败:", err.Error())
+		fmt.Println("error connection server:", err.Error()) // error connecting server
 		return false
 	}
 	conn.Write([]byte(content))
