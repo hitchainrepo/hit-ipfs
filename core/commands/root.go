@@ -101,6 +101,9 @@ The CLI will exit with one of the following values:
 		cmdkit.StringOption("serverPort", "sp", "port of server"),
 		// add by Nigel end
 
+		// add by Nigel start: change all the hit commands to ipfs default command
+		// add by Nigel end
+
 		// global options, added to every command
 		cmds.OptionEncodingType,
 		cmds.OptionStreamChannels,
