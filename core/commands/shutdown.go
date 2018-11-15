@@ -9,6 +9,9 @@ import (
 	"gx/ipfs/QmSP88ryZkHSRn1fnngAaV2Vcn63WUJzAavnRM9CVdU1Ky/go-ipfs-cmdkit"
 )
 
+// add by Nigel start: if shut down the daemon, report the server
+// add by Nigel end
+
 var daemonShutdownCmd = &cmds.Command{
 	Helptext: cmdkit.HelpText{
 		Tagline: "Shut down the ipfs daemon",
