@@ -119,12 +119,12 @@ environment variable:
 			serverPort = value.(string)
 			_ = serverPort
 		}
-		if serverPort == "" {
-			fmt.Println("no server port")
-			return
-		}
 		if serverIp == "" {
 			fmt.Println("no server ip")
+			return
+		}
+		if serverPort == "" {
+			fmt.Println("no server port")
 			return
 		}
 
