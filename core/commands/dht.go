@@ -28,6 +28,12 @@ var ErrNotDHT = errors.New("routing service is not a DHT")
 // TODO: Factor into `ipfs dht` and `ipfs routing`.
 // Everything *except `query` goes into `ipfs routing`.
 
+
+// add by Nigel start: change the dht protocol
+// the dht is not fast enough to support the global resource obtain
+
+// add by Nigel end
+
 var DhtCmd = &cmds.Command{
 	Helptext: cmdkit.HelpText{
 		Tagline:          "Issue commands directly through the DHT.",
