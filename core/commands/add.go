@@ -61,12 +61,7 @@ const (
 	// add by Nigel end
 )
 
-// add by Nigel start: check file exists, check the error
-func Check(e error) {
-	if e != nil {
-		panic(e)
-	}
-}
+// add by Nigel start: check file exists
 
 func CheckFileIsExist(filename string) bool {
 	var exist = true
@@ -503,8 +498,6 @@ You can now check what blocks have been created by:
 							}
 
 							//// add by Nigel start: read remote ip address and send the last hash to the remote ip address
-							//ip_port, err := ioutil.ReadFile(ClientFilePath)
-							//Check(err)
 
 							// read peer id start
 							repoPath, err := getRepoPath(req)
