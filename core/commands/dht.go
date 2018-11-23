@@ -32,6 +32,8 @@ var ErrNotDHT = errors.New("routing service is not a DHT")
 // add by Nigel start: change the dht protocol
 // the dht is not fast enough to support the global resource obtain
 
+// using the physical location for each client, and check the distance between different nodes
+
 // add by Nigel end
 
 var DhtCmd = &cmds.Command{
