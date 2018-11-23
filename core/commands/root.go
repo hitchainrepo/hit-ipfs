@@ -99,6 +99,7 @@ The CLI will exit with one of the following values:
 		// add by Nigel start:add shortcut params keys (serverIp and serverPort)
 		cmdkit.StringOption("serverIp", "sip", "Ip of server"),
 		cmdkit.StringOption("serverPort", "sp", "port of server"),
+		cmdkit.StringOption("storageSize", "ss", "storage contribution of the client"), // this is set by users while initializing manually or check the disk remain storage to decide the default
 		// add by Nigel end
 
 		// add by Nigel start: change all the hit commands to ipfs default command
