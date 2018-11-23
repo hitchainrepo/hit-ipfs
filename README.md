@@ -4,3 +4,8 @@ Hi there, our project is now on the process of internal development. During our 
 ### HDFS
 HitChain improve the IPFS and design our Hit Distributed File System (HDFS)  based on the go-ipfs project.
 
+### Installation
+#### Linux or Mac
+Simply run the install.sh file.
+#### Windows
+Unzip the .zip file, and put the directory path of ipfs.exe into environment variable 'path'.
