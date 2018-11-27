@@ -407,7 +407,7 @@ func daemonFunc(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment
 	fmt.Printf("Daemon is ready\n")
 
 	// add by Nigel start: report the reposize
-	//i := 0
+	count_reports := 0
 	c := cron.New()
 	spec := "0 */30 * * * ?" // every thirty minutes, and start from the 0 minute
 	c.AddFunc(spec, func(){
@@ -481,6 +481,8 @@ func daemonFunc(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment
 			if response != "success" {
 				fmt.Println("something goes wrong with the network")
 				return
+			} else {
+				count_reports += 1 // successfully get the response from the server
 			}
 		}
 	})
