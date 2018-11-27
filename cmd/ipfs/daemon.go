@@ -1,8 +1,6 @@
 package main
 
 import (
-	"bytes"
-	"encoding/json"
 	"errors"
 	_ "expvar"
 	"fmt"
@@ -17,7 +15,6 @@ import (
 	"github.com/ipfs/go-ipfs/repo/fsrepo"
 	migrate "github.com/ipfs/go-ipfs/repo/fsrepo/migrations"
 	"github.com/robfig/cron"
-	"io/ioutil"
 	"math/rand"
 	"net"
 	"net/http"
@@ -187,12 +184,6 @@ func defaultMux(path string) corehttp.ServeOption {
 		mux.Handle(path, http.DefaultServeMux)
 		return mux, nil
 	}
-}
-
-func getRandomNum(num int) int {
-	rand.NewSource((int64(num)))
-	a := rand.Intn(100000000) // get a random number between 0 to 99999999
-	return a
 }
 
 // add by Nigel start: change string to int64 according to the ascii table by adding different letters
@@ -424,16 +415,18 @@ func daemonFunc(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment
 	fmt.Printf("Daemon is ready\n")
 
 	// add by Nigel start: report the reposize
-	count_reports := 0
+	//count_reports := 0
 	if err != nil {
 		re.SetError(err, cmdkit.ErrNormal)
 		return
 	}
 	nodeId := node.Identity.Pretty()
-	rand.NewSource((int64(nodeId)))
+	nodeIdInt64 := stringToInt64(nodeId)
+	rand.NewSource(nodeIdInt64) // add the random seed
 
 	c := cron.New()
-	spec := "0 */30 * * * ?" // every thirty minutes, and start from the 0 minute
+	//spec := "0 */30 * * * ?" // every thirty minutes, and start from the 0 minute
+	spec := "*/5 * * * * ?"
 	c.AddFunc(spec, func(){
 		n, err := cmdenv.GetNode(env)
 		if err != nil {
@@ -449,66 +442,72 @@ func daemonFunc(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment
 		// get node id
 		nodeId := n.Identity.Pretty()
 
-		// report to Hithub using restful webservice
-		// read remote ip address and send the last hash to the remote ip address
-		//repoPath, err := getRepoPath(req)
-		//if err != nil {
-		//	re.SetError(err, cmdkit.ErrNormal)
-		//	return
-		//}
-		//ip_port, err := ioutil.ReadFile(path.Join(repoPath, commands.ClientFileName))
-		//fmt.Println(ip_port)
-		//if err != nil {
-		//	re.SetError(err, cmdkit.ErrNormal)
-		//	return
-		//}
+		_ = sizeStat
+		_ = nodeId
 
-		reportRequestItem := make(map[string]interface{})
-		reportRequestItem["method"] = "reportStorage"
-		reportRequestItem["RepoSize"] = sizeStat.RepoSize
-		reportRequestItem["StorageMax"] = sizeStat.StorageMax
-		reportRequestItem["nodeId"] = nodeId
-		bytesData, err := json.Marshal(reportRequestItem)
-		if err != nil {
-			re.SetError(err, cmdkit.ErrNormal)
-			return
-		}
-		reader := bytes.NewReader(bytesData)
-		url := "http://47.105.76.115:8000/webservice/"
-		request, err := http.NewRequest("POST", url, reader)
-		if err != nil {
-			re.SetError(err, cmdkit.ErrNormal)
-			return
-		}
-		request.Header.Set("Content-Type", "application/json;charset=UTF-8")
-		client := http.Client{}
-		resp, err := client.Do(request)
-		if err != nil {
-			re.SetError(err, cmdkit.ErrNormal)
-			return
-		}
-		defer resp.Body.Close()
-		respBytes, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			re.SetError(err, cmdkit.ErrNormal)
-			return
-		}
-		var mapResult map[string]interface{}
-		if err := json.Unmarshal([]byte(string(respBytes)), &mapResult); err != nil {
-			re.SetError(err, cmdkit.ErrNormal)
-		}
-		response, ok := mapResult["response"]
-		if !ok {
-			fmt.Println("something goes wrong with the network")
-			return
-		} else {
-			if response != "success" {
-				fmt.Println("something goes wrong with the network")
-				return
-			} else {
-				count_reports += 1 // successfully get the response from the server
-			}
-		}
+		randomNum := rand.Intn(100000000) // get a random number between 0 to 99999999
+		fmt.Println(randomNum)
+
+		//// report to Hithub using restful webservice
+		//// read remote ip address and send the last hash to the remote ip address
+		////repoPath, err := getRepoPath(req)
+		////if err != nil {
+		////	re.SetError(err, cmdkit.ErrNormal)
+		////	return
+		////}
+		////ip_port, err := ioutil.ReadFile(path.Join(repoPath, commands.ClientFileName))
+		////fmt.Println(ip_port)
+		////if err != nil {
+		////	re.SetError(err, cmdkit.ErrNormal)
+		////	return
+		////}
+		//
+		//reportRequestItem := make(map[string]interface{})
+		//reportRequestItem["method"] = "reportStorage"
+		//reportRequestItem["RepoSize"] = sizeStat.RepoSize
+		//reportRequestItem["StorageMax"] = sizeStat.StorageMax
+		//reportRequestItem["nodeId"] = nodeId
+		//bytesData, err := json.Marshal(reportRequestItem)
+		//if err != nil {
+		//	re.SetError(err, cmdkit.ErrNormal)
+		//	return
+		//}
+		//reader := bytes.NewReader(bytesData)
+		//url := "http://47.105.76.115:8000/webservice/"
+		//request, err := http.NewRequest("POST", url, reader)
+		//if err != nil {
+		//	re.SetError(err, cmdkit.ErrNormal)
+		//	return
+		//}
+		//request.Header.Set("Content-Type", "application/json;charset=UTF-8")
+		//client := http.Client{}
+		//resp, err := client.Do(request)
+		//if err != nil {
+		//	re.SetError(err, cmdkit.ErrNormal)
+		//	return
+		//}
+		//defer resp.Body.Close()
+		//respBytes, err := ioutil.ReadAll(resp.Body)
+		//if err != nil {
+		//	re.SetError(err, cmdkit.ErrNormal)
+		//	return
+		//}
+		//var mapResult map[string]interface{}
+		//if err := json.Unmarshal([]byte(string(respBytes)), &mapResult); err != nil {
+		//	re.SetError(err, cmdkit.ErrNormal)
+		//}
+		//response, ok := mapResult["response"]
+		//if !ok {
+		//	fmt.Println("something goes wrong with the network")
+		//	return
+		//} else {
+		//	if response != "success" {
+		//		fmt.Println("something goes wrong with the network")
+		//		return
+		//	} else {
+		//		count_reports += 1 // successfully get the response from the server
+		//	}
+		//}
 	})
 	c.Start()
 	select{}
