@@ -18,6 +18,7 @@ import (
 	migrate "github.com/ipfs/go-ipfs/repo/fsrepo/migrations"
 	"github.com/robfig/cron"
 	"io/ioutil"
+	"math/rand"
 	"net"
 	"net/http"
 	_ "net/http/pprof"
@@ -187,6 +188,22 @@ func defaultMux(path string) corehttp.ServeOption {
 		return mux, nil
 	}
 }
+
+func getRandomNum(num int) int {
+	rand.NewSource((int64(num)))
+	a := rand.Intn(100000000) // get a random number between 0 to 99999999
+	return a
+}
+
+// add by Nigel start: change string to int64 according to the ascii table by adding different letters
+func stringToInt64(s string) int64 {
+	result := int64(0)
+	for _, c := range s {
+		result += int64(c)
+	}
+	return result
+}
+// add by Nigel end
 
 func daemonFunc(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment) {
 	// Inject metrics before we do anything
@@ -408,6 +425,13 @@ func daemonFunc(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment
 
 	// add by Nigel start: report the reposize
 	count_reports := 0
+	if err != nil {
+		re.SetError(err, cmdkit.ErrNormal)
+		return
+	}
+	nodeId := node.Identity.Pretty()
+	rand.NewSource((int64(nodeId)))
+
 	c := cron.New()
 	spec := "0 */30 * * * ?" // every thirty minutes, and start from the 0 minute
 	c.AddFunc(spec, func(){
