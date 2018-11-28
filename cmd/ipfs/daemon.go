@@ -424,6 +424,8 @@ func daemonFunc(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment
 	nodeIdInt64 := stringToInt64(nodeId)
 	rand.NewSource(nodeIdInt64) // add the random seed
 
+	// how to get same random list in each crontab process ?????
+
 	c := cron.New()
 	//spec := "0 */30 * * * ?" // every thirty minutes, and start from the 0 minute
 	spec := "*/5 * * * * ?"
