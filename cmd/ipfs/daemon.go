@@ -448,19 +448,6 @@ func daemonFunc(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment
 		randomNum := rand.Intn(100000000) // get a random number between 0 to 99999999
 		fmt.Println(randomNum)
 
-		//// report to Hithub using restful webservice
-		//// read remote ip address and send the last hash to the remote ip address
-		////repoPath, err := getRepoPath(req)
-		////if err != nil {
-		////	re.SetError(err, cmdkit.ErrNormal)
-		////	return
-		////}
-		////ip_port, err := ioutil.ReadFile(path.Join(repoPath, commands.ClientFileName))
-		////fmt.Println(ip_port)
-		////if err != nil {
-		////	re.SetError(err, cmdkit.ErrNormal)
-		////	return
-		////}
 		//
 		//reportRequestItem := make(map[string]interface{})
 		//reportRequestItem["method"] = "reportStorage"
