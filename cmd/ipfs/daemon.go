@@ -15,7 +15,6 @@ import (
 	"github.com/ipfs/go-ipfs/repo/fsrepo"
 	migrate "github.com/ipfs/go-ipfs/repo/fsrepo/migrations"
 	"github.com/robfig/cron"
-	"math/rand"
 	"net"
 	"net/http"
 	_ "net/http/pprof"
@@ -420,11 +419,6 @@ func daemonFunc(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment
 		re.SetError(err, cmdkit.ErrNormal)
 		return
 	}
-	nodeId := node.Identity.Pretty()
-	nodeIdInt64 := stringToInt64(nodeId)
-	rand.NewSource(nodeIdInt64) // add the random seed
-
-	// how to get same random list in each crontab process ?????
 
 	c := cron.New()
 	//spec := "0 */30 * * * ?" // every thirty minutes, and start from the 0 minute
@@ -446,9 +440,6 @@ func daemonFunc(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment
 
 		_ = sizeStat
 		_ = nodeId
-
-		randomNum := rand.Intn(100000000) // get a random number between 0 to 99999999
-		fmt.Println(randomNum)
 
 		//
 		//reportRequestItem := make(map[string]interface{})
