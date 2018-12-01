@@ -16,12 +16,14 @@ import (
 	"github.com/ipfs/go-ipfs/repo/fsrepo"
 	migrate "github.com/ipfs/go-ipfs/repo/fsrepo/migrations"
 	"github.com/robfig/cron"
+	"io/ioutil"
 	"net"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
 	"sort"
 	"sync"
+	"path"
 
 	"gx/ipfs/QmPTfgFTo9PFr1PvPKyKoeMgBvYPh6cX3aDP7DHKVbnCbi/go-ipfs-cmds"
 	"gx/ipfs/QmSP88ryZkHSRn1fnngAaV2Vcn63WUJzAavnRM9CVdU1Ky/go-ipfs-cmdkit"
@@ -195,6 +197,22 @@ func stringToInt64(s string) int64 {
 		result += int64(c)
 	}
 	return result
+}
+// add by Nigel end
+
+// add by Nigel start: read local file
+func readIpPort(req *cmds.Request) (string, error) {
+	repoPath, err := getRepoPath(req)
+	if err != nil {
+		return "", err
+	} else {
+		ip_port, err := ioutil.ReadFile(path.Join(repoPath, commands.ClientFileName))
+		if err != nil {
+			return "", err
+		} else {
+			return string(ip_port), err
+		}
+	}
 }
 // add by Nigel end
 
@@ -438,6 +456,14 @@ func daemonFunc(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment
 
 	fmt.Println(privKey)
 	fmt.Println(publKey)
+
+	// read ip and port from local file
+	ip_port, err := readIpPort(req)
+	if err != nil {
+		re.SetError(err, cmdkit.ErrNormal)
+		return
+	}
+	fmt.Println(ip_port)
 	// add by Nigel end
 
 	fmt.Printf("Daemon is ready\n")
