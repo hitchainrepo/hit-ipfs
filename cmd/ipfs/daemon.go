@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/base64"
 	"errors"
 	_ "expvar"
 	"fmt"
@@ -28,6 +29,8 @@ import (
 	"gx/ipfs/QmV6FjemM1K8oXjrvuq3wuVWWoU2TLDPmNnKrxHzY3v6Ai/go-multiaddr-net"
 	"gx/ipfs/QmYYv3QFnfQbiwmi1tpkgKF8o4xFnZoBrvpupTiGJwL9nH/client_golang/prometheus"
 	ma "gx/ipfs/QmYmsdtJ3HsodkePE3eU3TsCaP2YvPZJ4LoXnNkDE5Tpt7/go-multiaddr"
+
+	ci "gx/ipfs/QmPvyPwuCgJ7pDmrKDxRtsScJgBaM5h4EpRL2qQJsmXf4n/go-libp2p-crypto"
 )
 
 const (
@@ -411,18 +414,40 @@ func daemonFunc(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment
 	// initialize metrics collector
 	prometheus.MustRegister(&corehttp.IpfsNodeCollector{Node: node})
 
-	fmt.Printf("Daemon is ready\n")
-
-	// add by Nigel start: report the reposize
-	//count_reports := 0
+	// add by Nigel start: generate a temporary rsa key pair
+	sk, pk, err := ci.GenerateKeyPair(ci.RSA, nBitsForKeypairDefault) // pk represents the public key
 	if err != nil {
 		re.SetError(err, cmdkit.ErrNormal)
 		return
 	}
 
+	// TODO(security)
+	skbytes, err := sk.Bytes()
+	if err != nil {
+		re.SetError(err, cmdkit.ErrNormal)
+		return
+	}
+	pkbytes, err := pk.Bytes()
+	if err != nil {
+		re.SetError(err, cmdkit.ErrNormal)
+		return
+	}
+
+	privKey := base64.StdEncoding.EncodeToString(skbytes) // the private key
+	publKey := base64.StdEncoding.EncodeToString(pkbytes) // the public key
+
+	fmt.Println(privKey)
+	fmt.Println(publKey)
+	// add by Nigel end
+
+	fmt.Printf("Daemon is ready\n")
+
+	// add by Nigel start: report the reposize
+	//count_reports := 0
+
 	c := cron.New()
-	//spec := "0 */30 * * * ?" // every thirty minutes, and start from the 0 minute
-	spec := "*/5 * * * * ?"
+	spec := "0 */30 * * * ?" // every thirty minutes, and start from the 0 minute
+	//spec := "*/5 * * * * ?"
 	c.AddFunc(spec, func(){
 		n, err := cmdenv.GetNode(env)
 		if err != nil {
