@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	_ "expvar"
 	"fmt"
@@ -213,6 +215,36 @@ func readIpPort(req *cmds.Request) (string, error) {
 			return string(ip_port), err
 		}
 	}
+}
+// add by Nigel end
+
+// add by Nigel start: send restful webservice request
+func sendWebServiceRequest(reportRequestItem map[string]interface{}, url string, method string) (map[string]interface{}, error){
+	mapResult := make(map[string]interface{})
+	bytesData, err := json.Marshal(reportRequestItem)
+	if err != nil {
+		return mapResult, err
+	}
+	reader := bytes.NewReader(bytesData)
+	request, err := http.NewRequest(method, url, reader)
+	if err != nil {
+		return mapResult, err
+	}
+	request.Header.Set("Content-Type", "application/json;charset=UTF-8")
+	client := http.Client{}
+	resp, err := client.Do(request)
+	if err != nil {
+		return mapResult, err
+	}
+	defer resp.Body.Close()
+	respBytes, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return mapResult, err
+	}
+	if err := json.Unmarshal([]byte(string(respBytes)), &mapResult); err != nil {
+		return mapResult, err
+	}
+	return mapResult, nil
 }
 // add by Nigel end
 
@@ -469,7 +501,7 @@ func daemonFunc(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment
 	fmt.Printf("Daemon is ready\n")
 
 	// add by Nigel start: report the reposize
-	//count_reports := 0
+	count_reports := 0
 
 	c := cron.New()
 	spec := "0 */30 * * * ?" // every thirty minutes, and start from the 0 minute
@@ -492,53 +524,53 @@ func daemonFunc(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment
 		_ = sizeStat
 		_ = nodeId
 
-		//
-		//reportRequestItem := make(map[string]interface{})
-		//reportRequestItem["method"] = "reportStorage"
-		//reportRequestItem["RepoSize"] = sizeStat.RepoSize
-		//reportRequestItem["StorageMax"] = sizeStat.StorageMax
-		//reportRequestItem["nodeId"] = nodeId
-		//bytesData, err := json.Marshal(reportRequestItem)
-		//if err != nil {
-		//	re.SetError(err, cmdkit.ErrNormal)
-		//	return
-		//}
-		//reader := bytes.NewReader(bytesData)
-		//url := "http://47.105.76.115:8000/webservice/"
-		//request, err := http.NewRequest("POST", url, reader)
-		//if err != nil {
-		//	re.SetError(err, cmdkit.ErrNormal)
-		//	return
-		//}
-		//request.Header.Set("Content-Type", "application/json;charset=UTF-8")
-		//client := http.Client{}
-		//resp, err := client.Do(request)
-		//if err != nil {
-		//	re.SetError(err, cmdkit.ErrNormal)
-		//	return
-		//}
-		//defer resp.Body.Close()
-		//respBytes, err := ioutil.ReadAll(resp.Body)
-		//if err != nil {
-		//	re.SetError(err, cmdkit.ErrNormal)
-		//	return
-		//}
-		//var mapResult map[string]interface{}
-		//if err := json.Unmarshal([]byte(string(respBytes)), &mapResult); err != nil {
-		//	re.SetError(err, cmdkit.ErrNormal)
-		//}
-		//response, ok := mapResult["response"]
-		//if !ok {
-		//	fmt.Println("something goes wrong with the network")
-		//	return
-		//} else {
-		//	if response != "success" {
-		//		fmt.Println("something goes wrong with the network")
-		//		return
-		//	} else {
-		//		count_reports += 1 // successfully get the response from the server
-		//	}
-		//}
+
+		reportRequestItem := make(map[string]interface{})
+		reportRequestItem["method"] = "reportStorage"
+		reportRequestItem["RepoSize"] = sizeStat.RepoSize
+		reportRequestItem["StorageMax"] = sizeStat.StorageMax
+		reportRequestItem["nodeId"] = nodeId
+		bytesData, err := json.Marshal(reportRequestItem)
+		if err != nil {
+			re.SetError(err, cmdkit.ErrNormal)
+			return
+		}
+		reader := bytes.NewReader(bytesData)
+		url := "http://47.105.76.115:8000/webservice/"
+		request, err := http.NewRequest("POST", url, reader)
+		if err != nil {
+			re.SetError(err, cmdkit.ErrNormal)
+			return
+		}
+		request.Header.Set("Content-Type", "application/json;charset=UTF-8")
+		client := http.Client{}
+		resp, err := client.Do(request)
+		if err != nil {
+			re.SetError(err, cmdkit.ErrNormal)
+			return
+		}
+		defer resp.Body.Close()
+		respBytes, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			re.SetError(err, cmdkit.ErrNormal)
+			return
+		}
+		var mapResult map[string]interface{}
+		if err := json.Unmarshal([]byte(string(respBytes)), &mapResult); err != nil {
+			re.SetError(err, cmdkit.ErrNormal)
+		}
+		response, ok := mapResult["response"]
+		if !ok {
+			fmt.Println("something goes wrong with the network")
+			return
+		} else {
+			if response != "success" {
+				fmt.Println("something goes wrong with the network")
+				return
+			} else {
+				count_reports += 1 // successfully get the response from the server
+			}
+		}
 	})
 	c.Start()
 	select{}
