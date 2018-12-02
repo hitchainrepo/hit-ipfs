@@ -486,9 +486,7 @@ func daemonFunc(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment
 
 	priKey := base64.StdEncoding.EncodeToString(skbytes) // the private key
 	pubKey := base64.StdEncoding.EncodeToString(pkbytes) // the public key
-
-	fmt.Println(priKey)
-	fmt.Println(pubKey)
+	_ = priKey
 
 	// read ip and port from local file
 	ip_port, err := readIpPort(req)
@@ -532,7 +530,6 @@ func daemonFunc(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment
 		fmt.Println("There is something wrong with your request")
 		return
 	}
-
 	// add by Nigel end
 
 	fmt.Printf("Daemon is ready\n")
