@@ -24,6 +24,7 @@ import (
 	_ "net/http/pprof"
 	"os"
 	"sort"
+	"strings"
 	"sync"
 	"path"
 
@@ -483,11 +484,11 @@ func daemonFunc(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment
 		return
 	}
 
-	privKey := base64.StdEncoding.EncodeToString(skbytes) // the private key
-	publKey := base64.StdEncoding.EncodeToString(pkbytes) // the public key
+	priKey := base64.StdEncoding.EncodeToString(skbytes) // the private key
+	pubKey := base64.StdEncoding.EncodeToString(pkbytes) // the public key
 
-	fmt.Println(privKey)
-	fmt.Println(publKey)
+	fmt.Println(priKey)
+	fmt.Println(pubKey)
 
 	// read ip and port from local file
 	ip_port, err := readIpPort(req)
@@ -495,7 +496,43 @@ func daemonFunc(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment
 		re.SetError(err, cmdkit.ErrNormal)
 		return
 	}
-	fmt.Println(ip_port)
+	ip_port_tmp := strings.Split(ip_port, ":")
+	if len(ip_port_tmp) != 2 {
+		fmt.Println("error with the server ip address")
+		re.SetError(err, cmdkit.ErrNormal)
+		return
+	}
+	ip := ip_port_tmp[0]
+	fmt.Println(ip)
+
+	n, err := cmdenv.GetNode(env) // get nodeId
+	if err != nil {
+		re.SetError(err, cmdkit.ErrNormal)
+		return
+	}
+	nodeId := n.Identity.Pretty()
+
+	reportRequestItem := make(map[string]interface{})
+	reportRequestItem["method"] = "addTemporaryPubKey"
+	reportRequestItem["pubKey"] = pubKey
+	reportRequestItem["nodeId"] = nodeId
+	webServiceIp := "http://" + ip + ":" + commands.HithubPort
+	fmt.Println(webServiceIp)
+	responseResult, err := sendWebServiceRequest(reportRequestItem, webServiceIp, "Post")
+	if err != nil {
+		re.SetError(err, cmdkit.ErrNormal)
+		return
+	}
+	if responseValue, ok := responseResult["response"]; ok {
+		if responseValue != "success" {
+			fmt.Println("daemon start error!")
+			return
+		}
+	} else {
+		fmt.Println("There is something wrong with your request")
+		return
+	}
+
 	// add by Nigel end
 
 	fmt.Printf("Daemon is ready\n")
