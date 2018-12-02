@@ -234,6 +234,10 @@ func sendWebServiceRequest(reportRequestItem map[string]interface{}, url string,
 	request.Header.Set("Content-Type", "application/json;charset=UTF-8")
 	client := http.Client{}
 	resp, err := client.Do(request)
+	if resp.StatusCode != 200 {
+		fmt.Println("Error with the request!")
+		return mapResult, errors.New("Error requesting the server!")
+	}
 	if err != nil {
 		return mapResult, err
 	}
