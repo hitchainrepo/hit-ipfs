@@ -238,7 +238,7 @@ func sendWebServiceRequest(reportRequestItem map[string]interface{}, url string,
 	fmt.Println(string(respBytesTmp))
 	if resp.StatusCode != 200 {
 		fmt.Println("Error with the request!")
-		return mapResult, errors.New("Error requesting the server!")
+		return mapResult, errors.New("request the server!")
 	}
 	if err != nil {
 		return mapResult, err
@@ -493,6 +493,7 @@ func daemonFunc(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment
 	priKey := base64.StdEncoding.EncodeToString(skbytes) // the private key
 	pubKey := base64.StdEncoding.EncodeToString(pkbytes) // the public key
 	_ = priKey
+	_ = pubKey
 
 	// read ip and port from local file
 	ip_port, err := readIpPort(req)
@@ -520,7 +521,7 @@ func daemonFunc(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment
 	reportRequestItem["pubKey"] = pubKey
 	reportRequestItem["nodeId"] = nodeId
 	webServiceIp := "http://" + ip + ":" + commands.HithubPort + "/webservice/"
-	responseResult, err := sendWebServiceRequest(reportRequestItem, webServiceIp, "Post")
+	responseResult, err := sendWebServiceRequest(reportRequestItem, webServiceIp, "POST")
 	if err != nil {
 		re.SetError(err, cmdkit.ErrNormal)
 		return
