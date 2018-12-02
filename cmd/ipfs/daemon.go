@@ -501,7 +501,6 @@ func daemonFunc(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment
 		return
 	}
 	ip := ip_port_tmp[0]
-	fmt.Println(ip)
 
 	n, err := cmdenv.GetNode(env) // get nodeId
 	if err != nil {
@@ -515,7 +514,6 @@ func daemonFunc(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment
 	reportRequestItem["pubKey"] = pubKey
 	reportRequestItem["nodeId"] = nodeId
 	webServiceIp := "http://" + ip + ":" + commands.HithubPort
-	fmt.Println(webServiceIp)
 	responseResult, err := sendWebServiceRequest(reportRequestItem, webServiceIp, "Post")
 	if err != nil {
 		re.SetError(err, cmdkit.ErrNormal)
