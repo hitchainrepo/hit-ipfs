@@ -234,6 +234,8 @@ func sendWebServiceRequest(reportRequestItem map[string]interface{}, url string,
 	request.Header.Set("Content-Type", "application/json;charset=UTF-8")
 	client := http.Client{}
 	resp, err := client.Do(request)
+	respBytesTmp, err := ioutil.ReadAll(resp.Body)
+	fmt.Println(string(respBytesTmp))
 	if resp.StatusCode != 200 {
 		fmt.Println("Error with the request!")
 		return mapResult, errors.New("Error requesting the server!")
@@ -517,7 +519,7 @@ func daemonFunc(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment
 	reportRequestItem["method"] = "addTemporaryPubKey"
 	reportRequestItem["pubKey"] = pubKey
 	reportRequestItem["nodeId"] = nodeId
-	webServiceIp := "http://" + ip + ":" + commands.HithubPort
+	webServiceIp := "http://" + ip + ":" + commands.HithubPort + "/webservice/"
 	responseResult, err := sendWebServiceRequest(reportRequestItem, webServiceIp, "Post")
 	if err != nil {
 		re.SetError(err, cmdkit.ErrNormal)
