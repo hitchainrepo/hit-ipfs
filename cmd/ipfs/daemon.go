@@ -2,8 +2,14 @@ package main
 
 import (
 	"bytes"
+	"crypto"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
+	"encoding/pem"
 	"errors"
 	_ "expvar"
 	"fmt"
@@ -23,10 +29,11 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 	"os"
+	"path"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
-	"path"
 
 	"gx/ipfs/QmPTfgFTo9PFr1PvPKyKoeMgBvYPh6cX3aDP7DHKVbnCbi/go-ipfs-cmds"
 	"gx/ipfs/QmSP88ryZkHSRn1fnngAaV2Vcn63WUJzAavnRM9CVdU1Ky/go-ipfs-cmdkit"
@@ -234,14 +241,12 @@ func sendWebServiceRequest(reportRequestItem map[string]interface{}, url string,
 	request.Header.Set("Content-Type", "application/json;charset=UTF-8")
 	client := http.Client{}
 	resp, err := client.Do(request)
-	respBytesTmp, err := ioutil.ReadAll(resp.Body)
-	fmt.Println(string(respBytesTmp))
+	if err != nil {
+		return mapResult, err
+	}
 	if resp.StatusCode != 200 {
 		fmt.Println("Error with the request!")
 		return mapResult, errors.New("request the server!")
-	}
-	if err != nil {
-		return mapResult, err
 	}
 	defer resp.Body.Close()
 	respBytes, err := ioutil.ReadAll(resp.Body)
@@ -252,6 +257,34 @@ func sendWebServiceRequest(reportRequestItem map[string]interface{}, url string,
 		return mapResult, err
 	}
 	return mapResult, nil
+}
+// add by Nigel end
+
+// add by Nigel start: rsa encryption
+func RsaSignWithSha256Hex(data string, prvKey string) (string, error) {
+	keyByts, err := hex.DecodeString(prvKey)
+	if err != nil {
+		fmt.Println("error line 265")
+		fmt.Println(err)
+		return "", err
+	}
+	privateKey, err := x509.ParsePKCS8PrivateKey(keyByts)
+	if err != nil {
+		fmt.Println("error line 271")
+		fmt.Println("ParsePKCS8PrivateKey err", err)
+		return "", err
+	}
+	h := crypto.SHA256.New()
+	h.Write([]byte([]byte(data)))
+	hash := h.Sum(nil)
+	signature, err := rsa.SignPKCS1v15(rand.Reader, privateKey.(*rsa.PrivateKey), crypto.SHA256, hash[:])
+	if err != nil {
+		fmt.Println("error line 280")
+		fmt.Printf("Error from signing: %s\n", err)
+		return "", err
+	}
+	out := hex.EncodeToString(signature)
+	return out, nil
 }
 // add by Nigel end
 
@@ -479,21 +512,37 @@ func daemonFunc(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment
 	}
 
 	// TODO(security)
-	skbytes, err := sk.Bytes()
+	//skbytes, err := sk.Bytes()
+	//if err != nil {
+	//	re.SetError(err, cmdkit.ErrNormal)
+	//	return
+	//}
+	//pkbytes, err := pk.Bytes()
+	//if err != nil {
+	//	re.SetError(err, cmdkit.ErrNormal)
+	//	return
+	//}
+	//priKey := string(skbytes)
+	//pubKey := string(pkbytes)
+	//publicBytes, err := x509.MarshalPKIXPublicKey()
+	publicBytes, err := pk.Raw()
 	if err != nil {
 		re.SetError(err, cmdkit.ErrNormal)
 		return
 	}
-	pkbytes, err := pk.Bytes()
-	if err != nil {
-		re.SetError(err, cmdkit.ErrNormal)
-		return
-	}
-
-	priKey := base64.StdEncoding.EncodeToString(skbytes) // the private key
-	pubKey := base64.StdEncoding.EncodeToString(pkbytes) // the public key
-	_ = priKey
-	_ = pubKey
+	pubKeyBytes := pem.EncodeToMemory(&pem.Block{
+		Bytes: publicBytes,
+		Type:  "PUBLIC KEY",
+	})
+	//priKey, err := ci.MarshalPrivateKey(sk)
+	//pubKey, err := ci.MarshalPublicKey(pk)
+	fmt.Println(base64.StdEncoding.EncodeToString(pubKeyBytes))
+	//priKey := base64.StdEncoding.EncodeToString(skbytes) // the private key
+	//pubKey := base64.StdEncoding.EncodeToString(pkbytes) // the public key
+	//priKey := base64.URLEncoding.EncodeToString(skbytes)
+	//pubKey := base64.URLEncoding.EncodeToString(pkbytes)
+	//_ = priKey
+	//_ = pubKey
 
 	// read ip and port from local file
 	ip_port, err := readIpPort(req)
@@ -518,15 +567,17 @@ func daemonFunc(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment
 
 	reportRequestItem := make(map[string]interface{})
 	reportRequestItem["method"] = "addTemporaryPubKey"
-	reportRequestItem["pubKey"] = pubKey
+	reportRequestItem["pubKey"] = base64.StdEncoding.EncodeToString(pubKeyBytes)
 	reportRequestItem["nodeId"] = nodeId
 	webServiceIp := "http://" + ip + ":" + commands.HithubPort + "/webservice/"
 	responseResult, err := sendWebServiceRequest(reportRequestItem, webServiceIp, "POST")
+
 	if err != nil {
 		re.SetError(err, cmdkit.ErrNormal)
 		return
 	}
-	if responseValue, ok := responseResult["response"]; ok {
+	responseValue, ok := responseResult["response"]
+	if ok {
 		if responseValue != "success" {
 			fmt.Println("daemon start error!")
 			return
@@ -543,9 +594,10 @@ func daemonFunc(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment
 	count_reports := 0
 
 	c := cron.New()
-	spec := "0 */30 * * * ?" // every thirty minutes, and start from the 0 minute
-	//spec := "*/5 * * * * ?"
+	//spec := "0 */30 * * * ?" // every thirty minutes, and start from the 0 minute
+	spec := "*/5 * * * * ?"
 	c.AddFunc(spec, func(){
+		fmt.Println("in the crontab function")
 		n, err := cmdenv.GetNode(env)
 		if err != nil {
 			re.SetError(err, cmdkit.ErrNormal)
@@ -563,11 +615,29 @@ func daemonFunc(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment
 		_ = sizeStat
 		_ = nodeId
 
+		repoSize := sizeStat.RepoSize
+		storageMax := sizeStat.StorageMax
+
+		repoSizeString := strconv.FormatUint(repoSize, 10)
+		storageMaxString := strconv.FormatUint(storageMax, 10)
+
+		repoSizeBytes, err := sk.Sign([]byte(repoSizeString))
+		if err != nil {
+			re.SetError(err, cmdkit.ErrNormal)
+			return
+		}
+		storageMaxBytes, err := sk.Sign([]byte(string(storageMaxString)))
+		if err != nil {
+			re.SetError(err, cmdkit.ErrNormal)
+			return
+		}
 
 		reportRequestItem := make(map[string]interface{})
 		reportRequestItem["method"] = "reportStorage"
-		reportRequestItem["RepoSize"] = sizeStat.RepoSize
-		reportRequestItem["StorageMax"] = sizeStat.StorageMax
+		reportRequestItem["RepoSizeSign"] = base64.StdEncoding.EncodeToString(repoSizeBytes)
+		reportRequestItem["StorageMaxSign"] = base64.StdEncoding.EncodeToString(storageMaxBytes)
+		reportRequestItem["RepoSize"] = repoSizeString
+		reportRequestItem["StorageMax"] = storageMaxString
 		reportRequestItem["nodeId"] = nodeId
 		bytesData, err := json.Marshal(reportRequestItem)
 		if err != nil {
@@ -600,11 +670,11 @@ func daemonFunc(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment
 		}
 		response, ok := mapResult["response"]
 		if !ok {
-			fmt.Println("something goes wrong with the network")
+			fmt.Println("something went wrong")
 			return
 		} else {
 			if response != "success" {
-				fmt.Println("something goes wrong with the network")
+				fmt.Println("something went wrong")
 				return
 			} else {
 				count_reports += 1 // successfully get the response from the server
