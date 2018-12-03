@@ -597,7 +597,6 @@ func daemonFunc(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment
 	//spec := "0 */30 * * * ?" // every thirty minutes, and start from the 0 minute
 	spec := "*/5 * * * * ?"
 	c.AddFunc(spec, func(){
-		fmt.Println("in the crontab function")
 		n, err := cmdenv.GetNode(env)
 		if err != nil {
 			re.SetError(err, cmdkit.ErrNormal)
