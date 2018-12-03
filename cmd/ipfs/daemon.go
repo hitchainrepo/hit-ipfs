@@ -594,8 +594,8 @@ func daemonFunc(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment
 	count_reports := 0
 
 	c := cron.New()
-	//spec := "0 */30 * * * ?" // every thirty minutes, and start from the 0 minute
-	spec := "*/5 * * * * ?"
+	spec := "0 */30 * * * ?" // every thirty minutes, and start from the 0 minute
+	//spec := "*/5 * * * * ?"
 	c.AddFunc(spec, func(){
 		n, err := cmdenv.GetNode(env)
 		if err != nil {
