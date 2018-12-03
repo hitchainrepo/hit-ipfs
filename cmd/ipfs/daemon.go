@@ -511,20 +511,6 @@ func daemonFunc(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment
 		return
 	}
 
-	// TODO(security)
-	//skbytes, err := sk.Bytes()
-	//if err != nil {
-	//	re.SetError(err, cmdkit.ErrNormal)
-	//	return
-	//}
-	//pkbytes, err := pk.Bytes()
-	//if err != nil {
-	//	re.SetError(err, cmdkit.ErrNormal)
-	//	return
-	//}
-	//priKey := string(skbytes)
-	//pubKey := string(pkbytes)
-	//publicBytes, err := x509.MarshalPKIXPublicKey()
 	publicBytes, err := pk.Raw()
 	if err != nil {
 		re.SetError(err, cmdkit.ErrNormal)
@@ -534,15 +520,6 @@ func daemonFunc(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment
 		Bytes: publicBytes,
 		Type:  "PUBLIC KEY",
 	})
-	//priKey, err := ci.MarshalPrivateKey(sk)
-	//pubKey, err := ci.MarshalPublicKey(pk)
-	fmt.Println(base64.StdEncoding.EncodeToString(pubKeyBytes))
-	//priKey := base64.StdEncoding.EncodeToString(skbytes) // the private key
-	//pubKey := base64.StdEncoding.EncodeToString(pkbytes) // the public key
-	//priKey := base64.URLEncoding.EncodeToString(skbytes)
-	//pubKey := base64.URLEncoding.EncodeToString(pkbytes)
-	//_ = priKey
-	//_ = pubKey
 
 	// read ip and port from local file
 	ip_port, err := readIpPort(req)
