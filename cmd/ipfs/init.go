@@ -128,6 +128,35 @@ environment variable:
 			return
 		}
 
+		var username, password string
+		fmt.Println("Please insert the username and password of Hithub:")
+		fmt.Print("username: ")
+		fmt.Scanln(&username)
+		fmt.Print("password: ")
+		fmt.Scanln(&password)
+
+		// judge whether the username and password correct
+		reportRequestItem := make(map[string]interface{})
+		reportRequestItem["username"] = username
+		reportRequestItem["password"] = password
+		reportRequestItem["method"] = "checkUserPassword"
+		webServiceIp := "http://" + serverIp + ":" + serverPort + "/webservice/"
+		responseResult, err := sendWebServiceRequest(reportRequestItem, webServiceIp, "POST")
+		if err != nil {
+			fmt.Print("Error with the network!")
+			return
+		}
+		responseValue, ok := responseResult["response"]
+		if ok {
+			if responseValue != "success" {
+				fmt.Println("Username and password do not match!")
+				return
+			}
+		} else {
+			fmt.Println("There is something wrong with your request")
+			return
+		}
+
 		// add by Nigel end
 
 		if err := doInit(os.Stdout, cctx.ConfigRoot, empty, nBitsForKeypair, profiles, conf, serverIp, serverPort); err != nil {
