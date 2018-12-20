@@ -6,10 +6,13 @@ import (
 	"errors"
 	"fmt"
 	"github.com/ipfs/go-ipfs/core/commands"
+	"github.com/sparrc/go-ping"
 	"io"
 	"os"
 	"path"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/ipfs/go-ipfs/assets"
 	oldcmds "github.com/ipfs/go-ipfs/commands"
@@ -150,6 +153,23 @@ func initWithDefaults(out io.Writer, repoRoot string, profile string) error {
 	return doInit(out, repoRoot, false, nBitsForKeypairDefault, profiles, nil, "", "")
 }
 
+// add by Nigel start: get ping milliseconds
+func getPingMilliseconds(ip string) float64{
+	delay := -1.0
+	pinger, err := ping.NewPinger(ip)
+	pinger.Timeout = time.Second * 5 // timeout in 5 seconds
+	if err != nil {
+		return delay
+	}
+	pinger.OnRecv = func(pkt *ping.Packet) {
+		delay = pkt.Rtt.Seconds() * 1000 // milliseconds
+		pinger.Stop()
+	}
+	pinger.Run()
+	return delay
+}
+// add by Nigel end
+
 func doInit(out io.Writer, repoRoot string, empty bool, nBitsForKeypair int, confProfiles []string, conf *config.Config, serverIp string, serverPort string) error {
 
 	if _, err := fmt.Fprintf(out, "initializing IPFS node at %s\n", repoRoot); err != nil {
@@ -164,6 +184,65 @@ func doInit(out io.Writer, repoRoot string, empty bool, nBitsForKeypair int, con
 		return errRepoExists
 	}
 
+
+	// add by Nigel start: getAllServers that can be connected
+	webServiceIp := "http://" + serverIp + ":" + commands.HithubPort + "/webservice/"
+	reportRequestItem := make(map[string]interface{})
+	reportRequestItem["method"] = "getAllServers"
+	responseResult, err := sendWebServiceRequest(reportRequestItem, webServiceIp, "POST")
+	if err != nil {
+		fmt.Println("Error with the network!")
+		return nil
+	}
+	responseValue, ok := responseResult["response"]
+	if ok {
+		if responseValue != "success" {
+			return nil
+		} else {
+			ipListStr, ok := responseResult["ipList"]
+			if !ok {
+				return nil
+			}
+			addressListStr, ok := responseResult["addressList"]
+			if !ok {
+				return nil
+			}
+			ipArray := strings.Split(ipListStr.(string), ".,.")
+			addressArray := strings.Split(addressListStr.(string), ".,.")
+			num := len(ipArray)
+			if num > 0 {
+				fmt.Println("Enter the number of server from the list below:")
+			} else {
+				fmt.Println("No server exists, cannot init a client!")
+			}
+			var serverArray = make([]string, num)
+			for i := 0; i < num; i++ {
+				ip := ipArray[i]
+				address := addressArray[i]
+				delay := getPingMilliseconds(ip)
+				if delay < 0 {
+					continue
+				}
+				fmt.Printf("%d: %s, delay: %.2fms\n", i + 1, address, delay)
+				serverArray[i] = ip
+			}
+			var whichServer string
+			fmt.Scanln(&whichServer)
+			whichServerInt, err:=strconv.Atoi(whichServer)
+			if err != nil || whichServerInt <= 0 || whichServerInt > num {
+				fmt.Println("Error with the input number!")
+				return nil
+			}
+			selectIp := serverArray[whichServerInt - 1]
+			fmt.Println(selectIp)
+			return nil
+		}
+	} else {
+		fmt.Println("There is something wrong with your request")
+		return nil
+	}
+	// add by Nigel end
+
 	// add by Nigel start: verify username and password
 	var username, password string
 	fmt.Println("Please insert the username and password of Hithub (ctrl+c to exit):")
@@ -172,31 +251,31 @@ func doInit(out io.Writer, repoRoot string, empty bool, nBitsForKeypair int, con
 	fmt.Print("password: ")
 	fmt.Scanln(&password)
 	// judge whether the username and password correct
-	reportRequestItem := make(map[string]interface{})
+	reportRequestItem = make(map[string]interface{})
 	reportRequestItem["method"] = "checkUserPassword"
 	reportRequestItem["username"] = username
 	reportRequestItem["password"] = password
-	webServiceIp := "http://" + serverIp + ":" + commands.HithubPort + "/webservice/"
-	responseResult, err := sendWebServiceRequest(reportRequestItem, webServiceIp, "POST")
+	webServiceIp = "http://" + serverIp + ":" + commands.HithubPort + "/webservice/"
+	responseResult, err = sendWebServiceRequest(reportRequestItem, webServiceIp, "POST")
 	if err != nil {
 		fmt.Println("Error with the network!")
-		return err
+		return nil
 	}
-	responseValue, ok := responseResult["response"]
+	responseValue, ok = responseResult["response"]
 	if ok {
 		if responseValue != "success" {
 			fmt.Println("Username and password do not match!")
-			return err
+			return nil
 		}
 	} else {
 		fmt.Println("There is something wrong with your request")
-		return err
+		return nil
 	}
 	// add by Nigel end
 
 	if conf == nil {
 		var err error
-		conf, err = config.Init(out, nBitsForKeypair, serverIp, serverPort)
+		conf, err = config.Init(out, nBitsForKeypair, serverIp, serverPort, username, password, webServiceIp)
 		if err != nil {
 			return err
 		}
