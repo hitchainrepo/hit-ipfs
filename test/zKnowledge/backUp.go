@@ -27,7 +27,7 @@ func main() {
 	//}
 
 	//delay := -1.0
-	pinger, err := ping.NewPinger("127.0.0.1")
+	pinger, err := ping.NewPinger("www.baidu.com")
 	pinger.Timeout = time.Second * 5 // timeout in 5 seconds
 	if err != nil {
 		fmt.Printf("ERROR: %s\n", err.Error())
@@ -42,16 +42,17 @@ func main() {
 		fmt.Println(delay)
 		pinger.Stop()
 	}
-	pinger.OnFinish = func(stats *ping.Statistics) {
-		fmt.Printf("\n--- %s ping statistics ---\n", stats.Addr)
-		fmt.Printf("%d packets transmitted, %d packets received, %v%% packet loss\n",
-			stats.PacketsSent, stats.PacketsRecv, stats.PacketLoss)
-		fmt.Printf("round-trip min/avg/max/stddev = %v/%v/%v/%v\n",
-			stats.MinRtt, stats.AvgRtt, stats.MaxRtt, stats.StdDevRtt)
-	}
+	//pinger.OnFinish = func(stats *ping.Statistics) {
+	//	fmt.Printf("\n--- %s ping statistics ---\n", stats.Addr)
+	//	fmt.Printf("%d packets transmitted, %d packets received, %v%% packet loss\n",
+	//		stats.PacketsSent, stats.PacketsRecv, stats.PacketLoss)
+	//	fmt.Printf("round-trip min/avg/max/stddev = %v/%v/%v/%v\n",
+	//		stats.MinRtt, stats.AvgRtt, stats.MaxRtt, stats.StdDevRtt)
+	//}
 
 	fmt.Printf("PING %s (%s):\n", pinger.Addr(), pinger.IPAddr())
 	pinger.Run()
+	fmt.Println("finish")
 
 	//pinger, err := ping.NewPinger("47.89.185.83")
 	//if err != nil {
