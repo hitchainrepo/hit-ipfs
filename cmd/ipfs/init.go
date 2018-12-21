@@ -110,28 +110,28 @@ environment variable:
 			profiles = strings.Split(profile, ",")
 		}
 
-		// add by Nigel start: get the arguments
-		var params = req.Options
-		var serverIp string
-		if value, ok := params["serverIp"]; ok {
-			serverIp = value.(string)
-			_ = serverIp
-		}
-		var serverPort string
-		if value, ok := params["serverPort"]; ok {
-			serverPort = value.(string)
-			_ = serverPort
-		}
-		if serverIp == "" {
-			fmt.Println("no server ip")
-			return
-		}
-		if serverPort == "" {
-			fmt.Println("no server port")
-			return
-		}
-
-		// add by Nigel end
+		//// add by Nigel start: get the arguments
+		//var params = req.Options
+		//var serverIp string
+		//if value, ok := params["serverIp"]; ok {
+		//	serverIp = value.(string)
+		//	_ = serverIp
+		//}
+		//var serverPort string
+		//if value, ok := params["serverPort"]; ok {
+		//	serverPort = value.(string)
+		//	_ = serverPort
+		//}
+		//if serverIp == "" {
+		//	fmt.Println("no server ip")
+		//	return
+		//}
+		//if serverPort == "" {
+		//	fmt.Println("no server port")
+		//	return
+		//}
+		//
+		//// add by Nigel end
 
 		if err := doInit(os.Stdout, cctx.ConfigRoot, empty, nBitsForKeypair, profiles, conf, serverIp, serverPort); err != nil {
 			res.SetError(err, cmdkit.ErrNormal)
@@ -186,7 +186,7 @@ func doInit(out io.Writer, repoRoot string, empty bool, nBitsForKeypair int, con
 
 
 	// add by Nigel start: getAllServers that can be connected
-	webServiceIp := "http://" + serverIp + ":" + commands.HithubPort + "/webservice/"
+	webServiceIp := "http://" + commands.HithubIp + ":" + commands.HithubPort + "/webservice/"
 	reportRequestItem := make(map[string]interface{})
 	reportRequestItem["method"] = "getAllServers"
 	responseResult, err := sendWebServiceRequest(reportRequestItem, webServiceIp, "POST")
@@ -234,7 +234,9 @@ func doInit(out io.Writer, repoRoot string, empty bool, nBitsForKeypair int, con
 				return nil
 			}
 			selectIp := serverArray[whichServerInt - 1]
-			fmt.Println(selectIp)
+
+
+
 			return nil
 		}
 	} else {
