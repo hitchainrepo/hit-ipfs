@@ -133,7 +133,7 @@ environment variable:
 		//
 		//// add by Nigel end
 
-		if err := doInit(os.Stdout, cctx.ConfigRoot, empty, nBitsForKeypair, profiles, conf, serverIp, serverPort); err != nil {
+		if err := doInit(os.Stdout, cctx.ConfigRoot, empty, nBitsForKeypair, profiles, conf); err != nil {
 			res.SetError(err, cmdkit.ErrNormal)
 			return
 		}
@@ -234,10 +234,8 @@ func doInit(out io.Writer, repoRoot string, empty bool, nBitsForKeypair int, con
 				return nil
 			}
 			selectIp := serverArray[whichServerInt - 1]
-
-
-
-			return nil
+			_ = selectIp
+			//return nil
 		}
 	} else {
 		fmt.Println("There is something wrong with your request")
@@ -257,7 +255,7 @@ func doInit(out io.Writer, repoRoot string, empty bool, nBitsForKeypair int, con
 	reportRequestItem["method"] = "checkUserPassword"
 	reportRequestItem["username"] = username
 	reportRequestItem["password"] = password
-	webServiceIp = "http://" + serverIp + ":" + commands.HithubPort + "/webservice/"
+	webServiceIp = "http://" + commands.HithubIp + ":" + commands.HithubPort + "/webservice/"
 	responseResult, err = sendWebServiceRequest(reportRequestItem, webServiceIp, "POST")
 	if err != nil {
 		fmt.Println("Error with the network!")
@@ -277,10 +275,34 @@ func doInit(out io.Writer, repoRoot string, empty bool, nBitsForKeypair int, con
 
 	if conf == nil {
 		var err error
-		conf, err = config.Init(out, nBitsForKeypair, serverIp, serverPort, username, password, webServiceIp)
+		conf, err = config.Init(out, nBitsForKeypair)
 		if err != nil {
 			return err
 		}
+		// add by Nigel start: init with username
+		reportRequestItem := make(map[string]interface{})
+		reportRequestItem["method"] = "initWithUsername"
+		reportRequestItem["username"] = username
+		reportRequestItem["password"] = password
+		reportRequestItem["nodeId"] = conf.Identity.PeerID
+		fmt.Println(reportRequestItem["nodeId"])
+		responseResult, err := sendWebServiceRequest(reportRequestItem, webServiceIp, "POST")
+		if err != nil {
+			fmt.Println("Error with the network!")
+			return nil
+		}
+		responseValue, ok := responseResult["response"]
+		if ok {
+			if responseValue != "success" {
+				fmt.Println("Username and password do not match!")
+				return nil
+			}
+		} else {
+			fmt.Println("There is something wrong with your request")
+			return nil
+		}
+		// add by Nigel end
+
 	}
 
 	for _, profile := range confProfiles {
@@ -304,31 +326,31 @@ func doInit(out io.Writer, repoRoot string, empty bool, nBitsForKeypair int, con
 		}
 	}
 
-	// add by Nigel start: write a file
-	var serverFile *os.File
-	var err1 error
-	if commands.CheckFileIsExist(path.Join(repoRoot, commands.ClientFileName)) {
-		err := os.Remove(path.Join(repoRoot, commands.ClientFileName))
-		if err != nil{
-			return err
-		}
-		serverFile, err1 = os.OpenFile(path.Join(repoRoot, commands.ClientFileName), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0666) //打开文件
-		if err1 != nil{
-			return err1
-		}
-	} else {
-		serverFile, err1 = os.Create(path.Join(repoRoot, commands.ClientFileName))
-		if err1 != nil{
-			return err1
-		}
-	}
-	clientFileContent := serverIp + ":" + serverPort
-	n, err1 := io.WriteString(serverFile, clientFileContent)
-	if err1 != nil{
-		return err1
-	}
-	_ = n
-	// add by Nigel end
+	//// add by Nigel start: write a file
+	//var serverFile *os.File
+	//var err1 error
+	//if commands.CheckFileIsExist(path.Join(repoRoot, commands.ClientFileName)) {
+	//	err := os.Remove(path.Join(repoRoot, commands.ClientFileName))
+	//	if err != nil{
+	//		return err
+	//	}
+	//	serverFile, err1 = os.OpenFile(path.Join(repoRoot, commands.ClientFileName), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0666) //打开文件
+	//	if err1 != nil{
+	//		return err1
+	//	}
+	//} else {
+	//	serverFile, err1 = os.Create(path.Join(repoRoot, commands.ClientFileName))
+	//	if err1 != nil{
+	//		return err1
+	//	}
+	//}
+	//clientFileContent := serverIp + ":" + serverPort
+	//n, err1 := io.WriteString(serverFile, clientFileContent)
+	//if err1 != nil{
+	//	return err1
+	//}
+	//_ = n
+	//// add by Nigel end
 
 	// add by Nigel start: add swarm.key file into .ipfs directory
 	if commands.CheckFileIsExist(path.Join(repoRoot, "swarm.key")) {
