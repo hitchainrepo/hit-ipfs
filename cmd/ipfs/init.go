@@ -150,7 +150,7 @@ func initWithDefaults(out io.Writer, repoRoot string, profile string) error {
 		profiles = strings.Split(profile, ",")
 	}
 
-	return doInit(out, repoRoot, false, nBitsForKeypairDefault, profiles, nil, "", "")
+	return doInit(out, repoRoot, false, nBitsForKeypairDefault, profiles, nil)
 }
 
 // add by Nigel start: get ping milliseconds
