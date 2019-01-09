@@ -9,7 +9,6 @@ import (
 	"io/ioutil"
 	"net"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 
@@ -55,7 +54,7 @@ const (
 	inlineOptionName      = "inline"
 	inlineLimitOptionName = "inline-limit"
 	// add by Nigel start: declare global variables which can be used by other packages
-	ClientFileName = "serverIp.txt"
+	ClientFileName = "Hit/config"
 
 	// change the client file name to a hidden file
 
@@ -64,10 +63,29 @@ const (
 
 	HithubIp = "47.105.76.115"
 	HithubPort = "8000"
+
+	ServerListenerPort = "30004"
+	NBitsForKeypairDefault = 2048
 	// automatically get the server's swarmkey if there's something change
 
 	// add by Nigel end
 )
+
+// add by Nigel start: define several things
+type HitConfig struct {
+	IpfsServerIp string // selected server ip
+	Version string // insert the client version for version management
+}
+func (p *HitConfig) Init(ipfsServerIp string, version string) {
+	p.IpfsServerIp = ipfsServerIp
+	p.Version = version
+}
+
+type File struct {
+	*os.File
+	Path string
+}
+// add by Nigel end
 
 // add by Nigel start: check file exists
 
@@ -509,7 +527,7 @@ You can now check what blocks have been created by:
 							repoPath, err := getRepoPath(req)
 
 							// read remote ip address and send the last hash to the remote ip address
-							ip_port, err := ioutil.ReadFile(path.Join(repoPath, ClientFileName))
+							//ip_port, err := ioutil.ReadFile(path.Join(repoPath, ClientFileName))
 
 							if err != nil {
 								fmt.Println("Haven't completely added the files. Only stored in local repo!")
@@ -530,12 +548,18 @@ You can now check what blocks have been created by:
 							//fmt.Println("peer id: " + peerId)
 							// read peer id end
 
-							var savedOrNot = SendThingsToServerAfterAdd(string(ip_port), "Add:"+lastHash+"_"+peerId)
-							if savedOrNot == false{
-								fmt.Println("Haven't completely added the files. Only stored in local repo!")
-							} else if savedOrNot == true {
-								fmt.Println("Added completely!")
+							err = HitListenerDownload(repoPath, lastHash, peerId)
+							if err != nil {
+								panic(err)
 							}
+							fmt.Println("Added completely!")
+
+							//var savedOrNot = SendThingsToServerAfterAdd(string(ip_port), "Add:"+lastHash+"_"+peerId)
+							//if savedOrNot == false{
+							//	fmt.Println("Haven't completely added the files. Only stored in local repo!")
+							//} else if savedOrNot == true {
+							//	fmt.Println("Added completely!")
+							//}
 							// add by Nigel end
 
 							break LOOP
