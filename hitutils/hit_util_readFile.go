@@ -2,14 +2,13 @@ package util
 
 import (
 	"encoding/json"
-	"github.com/ipfs/go-ipfs/core/commands"
 	"io/ioutil"
 	"path"
 )
 
 func ReadListenerIp(repoPath string) (string, error) {
-	var hitconfig commands.HitConfig
-	hitconfigstr, err := ioutil.ReadFile(path.Join(repoPath, commands.ClientFileName))
+	var hitconfig HitConfig
+	hitconfigstr, err := ioutil.ReadFile(path.Join(repoPath, ClientFileName))
 	if err != nil {
 		return "", err
 	} else {

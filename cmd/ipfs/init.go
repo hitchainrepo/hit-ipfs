@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/ipfs/go-ipfs/cmd/ipfs/util"
 	"github.com/ipfs/go-ipfs/core/commands"
 	"github.com/sparrc/go-ping"
+	hitutil "github.com/ipfs/go-ipfs/hitutils"
 	"io"
 	"os"
 	"path"
@@ -344,7 +344,7 @@ func doInit(out io.Writer, repoRoot string, empty bool, nBitsForKeypair int, con
 		// add by Nigel end
 
 		// add by Nigel start: register client to server's listener
-		err = util.HitListenerAdd(selectIp, commands.ServerListenerPort, conf.Identity.PeerID)
+		err = hitutil.HitListenerAdd(selectIp, hitutil.ServerListenerPort, conf.Identity.PeerID)
 		if err != nil {
 			return nil
 		}
@@ -376,9 +376,9 @@ func doInit(out io.Writer, repoRoot string, empty bool, nBitsForKeypair int, con
 	// add by Nigel start: write a file
 	//var serverFile *os.File
 	//var err1 error
-	var hitconfig commands.HitConfig
+	var hitconfig hitutil.HitConfig
 	hitconfig.Init(selectIp, "1.0")
-	WriteConfigFile(path.Join(repoRoot, commands.ClientFileName), hitconfig)
+	WriteConfigFile(path.Join(repoRoot, hitutil.ClientFileName), hitconfig)
 	return nil
 	//if commands.CheckFileIsExist(path.Join(repoRoot, commands.ClientFileName)) {
 	//	err := os.Remove(path.Join(repoRoot, commands.ClientFileName))

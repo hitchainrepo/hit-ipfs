@@ -16,6 +16,7 @@ import (
 	"github.com/ipfs/go-ipfs/core/commands/cmdenv"
 	"github.com/ipfs/go-ipfs/core/coreunix"
 	"github.com/ipfs/go-ipfs/filestore"
+	hitutil "github.com/ipfs/go-ipfs/hitutils"
 	ft "gx/ipfs/QmQjEpRiwVvtowhq69dAtB4jhioPVFXiCcWZm9Sfgn7eqc/go-unixfs"
 	dag "gx/ipfs/QmRiQCJZ91B7VNmLvA6sxzDuBJGSojS3uXHHVuNr3iueNZ/go-merkledag"
 	dagtest "gx/ipfs/QmRiQCJZ91B7VNmLvA6sxzDuBJGSojS3uXHHVuNr3iueNZ/go-merkledag/test"
@@ -54,7 +55,7 @@ const (
 	inlineOptionName      = "inline"
 	inlineLimitOptionName = "inline-limit"
 	// add by Nigel start: declare global variables which can be used by other packages
-	ClientFileName = "Hit/config"
+	//ClientFileName = "Hit/config"
 
 	// change the client file name to a hidden file
 
@@ -64,28 +65,17 @@ const (
 	HithubIp = "47.105.76.115"
 	HithubPort = "8000"
 
-	ServerListenerPort = "30004"
+	//ServerListenerPort = "30004"
 	NBitsForKeypairDefault = 2048
 	// automatically get the server's swarmkey if there's something change
 
 	// add by Nigel end
 )
 
-// add by Nigel start: define several things
-type HitConfig struct {
-	IpfsServerIp string // selected server ip
-	Version string // insert the client version for version management
-}
-func (p *HitConfig) Init(ipfsServerIp string, version string) {
-	p.IpfsServerIp = ipfsServerIp
-	p.Version = version
-}
-
 type File struct {
 	*os.File
 	Path string
 }
-// add by Nigel end
 
 // add by Nigel start: check file exists
 
@@ -548,7 +538,7 @@ You can now check what blocks have been created by:
 							//fmt.Println("peer id: " + peerId)
 							// read peer id end
 
-							err = HitListenerDownload(repoPath, lastHash, peerId)
+							err = hitutil.HitListenerDownload(repoPath, lastHash, peerId)
 							if err != nil {
 								panic(err)
 							}

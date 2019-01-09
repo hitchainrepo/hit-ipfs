@@ -23,6 +23,7 @@ import (
 	nodeMount "github.com/ipfs/go-ipfs/fuse/node"
 	"github.com/ipfs/go-ipfs/repo/fsrepo"
 	migrate "github.com/ipfs/go-ipfs/repo/fsrepo/migrations"
+	hitutil "github.com/ipfs/go-ipfs/hitutils"
 	"github.com/robfig/cron"
 	"io/ioutil"
 	"net"
@@ -216,7 +217,7 @@ func readIpPort(req *cmds.Request) (string, error) {
 	if err != nil {
 		return "", err
 	} else {
-		ip_port, err := ioutil.ReadFile(path.Join(repoPath, commands.ClientFileName))
+		ip_port, err := ioutil.ReadFile(path.Join(repoPath, hitutil.ClientFileName))
 		if err != nil {
 			return "", err
 		} else {
