@@ -505,7 +505,7 @@ func daemonFunc(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment
 	prometheus.MustRegister(&corehttp.IpfsNodeCollector{Node: node})
 
 	// add by Nigel start: generate a temporary rsa key pair
-	sk, pk, err := ci.GenerateKeyPair(ci.RSA, nBitsForKeypairDefault) // pk represents the public key
+	sk, pk, err := ci.GenerateKeyPair(ci.RSA, commands.NBitsForKeypairDefault) // pk represents the public key
 	if err != nil {
 		re.SetError(err, cmdkit.ErrNormal)
 		return
