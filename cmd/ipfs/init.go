@@ -5,11 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/ipfs/go-ipfs/cmd/ipfs/util"
 	"github.com/ipfs/go-ipfs/core/commands"
 	"github.com/sparrc/go-ping"
 	"io"
 	"os"
 	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -23,10 +25,6 @@ import (
 	"gx/ipfs/QmPTfgFTo9PFr1PvPKyKoeMgBvYPh6cX3aDP7DHKVbnCbi/go-ipfs-cmds"
 	"gx/ipfs/QmSP88ryZkHSRn1fnngAaV2Vcn63WUJzAavnRM9CVdU1Ky/go-ipfs-cmdkit"
 	"gx/ipfs/QmTyiSs9VgdVb4pnzdjtKhcfdTkHFEaNn6xnCbZq4DTFRt/go-ipfs-config"
-)
-
-const (
-	nBitsForKeypairDefault = 2048
 )
 
 var initCmd = &cmds.Command{
@@ -51,7 +49,7 @@ environment variable:
 		cmdkit.FileArg("default-config", false, false, "Initialize with the given configuration.").EnableStdin(),
 	},
 	Options: []cmdkit.Option{
-		cmdkit.IntOption("bits", "b", "Number of bits to use in the generated RSA private key.").WithDefault(nBitsForKeypairDefault),
+		cmdkit.IntOption("bits", "b", "Number of bits to use in the generated RSA private key.").WithDefault(commands.NBitsForKeypairDefault),
 		cmdkit.BoolOption("empty-repo", "e", "Don't add and pin help files to the local storage."),
 		cmdkit.StringOption("profile", "p", "Apply profile settings to config. Multiple profiles can be separated by ','"),
 
@@ -150,7 +148,7 @@ func initWithDefaults(out io.Writer, repoRoot string, profile string) error {
 		profiles = strings.Split(profile, ",")
 	}
 
-	return doInit(out, repoRoot, false, nBitsForKeypairDefault, profiles, nil)
+	return doInit(out, repoRoot, false, commands.NBitsForKeypairDefault, profiles, nil)
 }
 
 // add by Nigel start: get ping milliseconds
@@ -170,6 +168,49 @@ func getPingMilliseconds(ip string) float64{
 }
 // add by Nigel end
 
+// add by Nigel start:
+func New(path string, mode os.FileMode) (*commands.File, error) {
+	f, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0666)
+	if err != nil {
+		return nil, err
+	}
+	if err := os.Chmod(f.Name(), mode); err != nil {
+		f.Close()
+		os.Remove(f.Name())
+		return nil, err
+	}
+	return &commands.File{File: f, Path: path}, nil
+}
+// add by Nigel end
+
+// add by Nigel start: encode configuration with json
+func encode(w io.Writer, value interface{}) error {
+	buf, err := json.MarshalIndent(value, "", "  ")
+	if err != nil {
+		return err
+	}
+	_, err = w.Write(buf)
+	return err
+}
+// add by Nigel end
+
+// add by Nigel start: write config file
+func WriteConfigFile(filename string, cfg interface{}) error {
+	err := os.MkdirAll(filepath.Dir(filename), 0775)
+	if err != nil {
+		return err
+	}
+
+	f, err := New(filename, 0660)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	return encode(f, cfg)
+}
+// add by Nigel end
+
 func doInit(out io.Writer, repoRoot string, empty bool, nBitsForKeypair int, confProfiles []string, conf *config.Config) error {
 
 	if _, err := fmt.Fprintf(out, "initializing IPFS node at %s\n", repoRoot); err != nil {
@@ -186,6 +227,7 @@ func doInit(out io.Writer, repoRoot string, empty bool, nBitsForKeypair int, con
 
 
 	// add by Nigel start: getAllServers that can be connected
+	var selectIp string
 	webServiceIp := "http://" + commands.HithubIp + ":" + commands.HithubPort + "/webservice/"
 	reportRequestItem := make(map[string]interface{})
 	reportRequestItem["method"] = "getAllServers"
@@ -214,6 +256,7 @@ func doInit(out io.Writer, repoRoot string, empty bool, nBitsForKeypair int, con
 				fmt.Println("Enter the number of server from the list below:")
 			} else {
 				fmt.Println("No server exists, cannot init a client!")
+				return nil
 			}
 			var serverArray = make([]string, num)
 			for i := 0; i < num; i++ {
@@ -233,9 +276,7 @@ func doInit(out io.Writer, repoRoot string, empty bool, nBitsForKeypair int, con
 				fmt.Println("Error with the input number!")
 				return nil
 			}
-			selectIp := serverArray[whichServerInt - 1]
-			_ = selectIp
-			//return nil
+			selectIp = serverArray[whichServerInt - 1]
 		}
 	} else {
 		fmt.Println("There is something wrong with your request")
@@ -285,7 +326,6 @@ func doInit(out io.Writer, repoRoot string, empty bool, nBitsForKeypair int, con
 		reportRequestItem["username"] = username
 		reportRequestItem["password"] = password
 		reportRequestItem["nodeId"] = conf.Identity.PeerID
-		fmt.Println(reportRequestItem["nodeId"])
 		responseResult, err := sendWebServiceRequest(reportRequestItem, webServiceIp, "POST")
 		if err != nil {
 			fmt.Println("Error with the network!")
@@ -299,6 +339,13 @@ func doInit(out io.Writer, repoRoot string, empty bool, nBitsForKeypair int, con
 			}
 		} else {
 			fmt.Println("There is something wrong with your request")
+			return nil
+		}
+		// add by Nigel end
+
+		// add by Nigel start: register client to server's listener
+		err = util.HitListenerAdd(selectIp, commands.ServerListenerPort, conf.Identity.PeerID)
+		if err != nil {
 			return nil
 		}
 		// add by Nigel end
@@ -326,9 +373,13 @@ func doInit(out io.Writer, repoRoot string, empty bool, nBitsForKeypair int, con
 		}
 	}
 
-	//// add by Nigel start: write a file
+	// add by Nigel start: write a file
 	//var serverFile *os.File
 	//var err1 error
+	var hitconfig commands.HitConfig
+	hitconfig.Init(selectIp, "1.0")
+	WriteConfigFile(path.Join(repoRoot, commands.ClientFileName), hitconfig)
+	return nil
 	//if commands.CheckFileIsExist(path.Join(repoRoot, commands.ClientFileName)) {
 	//	err := os.Remove(path.Join(repoRoot, commands.ClientFileName))
 	//	if err != nil{
@@ -344,13 +395,13 @@ func doInit(out io.Writer, repoRoot string, empty bool, nBitsForKeypair int, con
 	//		return err1
 	//	}
 	//}
-	//clientFileContent := serverIp + ":" + serverPort
+	//clientFileContent := selectIp
 	//n, err1 := io.WriteString(serverFile, clientFileContent)
 	//if err1 != nil{
 	//	return err1
 	//}
 	//_ = n
-	//// add by Nigel end
+	// add by Nigel end
 
 	// add by Nigel start: add swarm.key file into .ipfs directory
 	if commands.CheckFileIsExist(path.Join(repoRoot, "swarm.key")) {
