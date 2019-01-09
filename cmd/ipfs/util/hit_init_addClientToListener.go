@@ -1,4 +1,4 @@
-package main
+package util
 
 import (
 	"fmt"
@@ -29,7 +29,7 @@ func SendThingsToServerListener(ip_port string, content string) bool {
 	}
 }
 
-func add(serverIp string, serverPort string, peerId string) error {
+func HitListenerAdd(serverIp string, serverPort string, peerId string) error {
 	var savedOrNot = SendThingsToServerListener(serverIp+":"+serverPort, "PeerId:"+peerId)
 	if savedOrNot == false{
 		return errors.New("not initialized")
