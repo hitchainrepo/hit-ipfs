@@ -1,4 +1,4 @@
-package main
+package util
 
 import (
 	"encoding/json"
@@ -7,7 +7,7 @@ import (
 	"path"
 )
 
-func readListenerIp(repoPath string) (string, error) {
+func ReadListenerIp(repoPath string) (string, error) {
 	var hitconfig commands.HitConfig
 	hitconfigstr, err := ioutil.ReadFile(path.Join(repoPath, commands.ClientFileName))
 	if err != nil {
